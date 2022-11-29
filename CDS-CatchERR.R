@@ -210,7 +210,7 @@ for (bucket_loc in 1:dim(df)[1]){
       #download file, run md5sum, copy to data frame and delete file
       file_name=basename(bucket_url)
       if (bucket_file!=file_name){
-        cat(paste("ERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+        cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
       }
     }
     #if the file url has to be reworked to include the file with the base directory.
@@ -221,11 +221,11 @@ for (bucket_loc in 1:dim(df)[1]){
         #double check changes made
         file_name=basename(bucket_url_change)
         if (bucket_file!=file_name){
-          cat(paste("ERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+          cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
         }else{
           #if file name is still found, then change the url
           df$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("WARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
         }
       }else{
         #fix the 'file_url_in_cds' section to have the full file location
@@ -233,11 +233,11 @@ for (bucket_loc in 1:dim(df)[1]){
         #double check changes made
         file_name=basename(bucket_url_change)
         if (bucket_file!=file_name){
-          cat(paste("ERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+          cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
         }else{
           #if file name is still found, then change the url
-          df_no_md5$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("WARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          df$file_url_in_cds[bucket_loc]=bucket_url_change
+          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
         }
       }
     }
