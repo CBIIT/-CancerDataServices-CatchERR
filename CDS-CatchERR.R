@@ -185,7 +185,7 @@ for (value_set_name in names(df_all_terms)){
                 pv_pos=grep(pattern = TRUE, x = tolower(df_all_terms[value_set_name][[1]])%in%tolower(as.character(check_value)))
                 value_pos=grep(pattern = TRUE, x = df[value_set_name][[1]]%in%as.character(check_value))
                 df[value_pos,value_set_name]<-df_all_terms[value_set_name][[1]][pv_pos]
-                cat(paste("\tThe value in ",value_set_name," was changed: ", check_value," ---> ",df_all_terms[value_set_name][[1]][pv_pos],"\n",sep = ""))
+                cat(paste("\tThe value in ",value_set_name," was changed:\n\t", check_value," ---> ",df_all_terms[value_set_name][[1]][pv_pos],"\n",sep = ""))
               }
             }
           }
@@ -225,7 +225,7 @@ for (bucket_loc in 1:dim(df)[1]){
         }else{
           #if file name is still found, then change the url
           df$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
         }
       }else{
         #fix the 'file_url_in_cds' section to have the full file location
@@ -237,7 +237,7 @@ for (bucket_loc in 1:dim(df)[1]){
         }else{
           #if file name is still found, then change the url
           df$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed: ", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
         }
       }
     }
