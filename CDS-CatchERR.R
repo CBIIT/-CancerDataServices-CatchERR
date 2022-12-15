@@ -139,7 +139,7 @@ for (x in 1:length(VSN)){
 }
 
 #Enumerated Array properties
-enum_arrays=c('therapeutic_agents',"treatment_type")
+enum_arrays=c('therapeutic_agents',"treatment_type","study_data_types","morphology","primary_site","race")
 
 #Use the list of all accepted values for each value_set_name, and compare that against the Metadata page and determine if the values, if present, match the accepted terms.
 for (value_set_name in names(df_all_terms)){
