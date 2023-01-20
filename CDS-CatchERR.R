@@ -22,7 +22,7 @@
 ##################
 
 #List of needed packages
-list_of_packages=c("readr","openxlsx","stringi","readxl","janitor","optparse","tools")
+list_of_packages=c("readr","openxlsx","dplyr","stringi","readxl","janitor","optparse","tools")
 
 #Based on the packages that are present, install ones that are required.
 new.packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
@@ -32,6 +32,7 @@ suppressMessages(if(length(new.packages)) install.packages(new.packages, repos =
 suppressMessages(library(readr,verbose = F))
 suppressMessages(library(readxl,verbose = F))
 suppressMessages(library(openxlsx, verbose = F))
+suppressMessages(library(dplyr, verbose = F))
 suppressMessages(library(stringi,verbose = F))
 suppressMessages(library(janitor,verbose = F))
 suppressMessages(library(optparse,verbose = F))
@@ -301,6 +302,7 @@ df_index=mutate(df_index,GUID=paste("dg.4DFC/",GUID,sep = ""))
 df=suppressMessages(left_join(df,df_index))
 
 df=df%>%
+  mutate(url = file_url_in_cds)%>%
   select(GUID, file_size, md5sum, url, acl, everything())
     
 
