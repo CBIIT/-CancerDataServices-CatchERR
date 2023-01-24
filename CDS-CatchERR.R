@@ -59,7 +59,7 @@ option_list = list(
 )
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.1")
+opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.2")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -90,6 +90,14 @@ path=paste(dirname(file_path),"/",sep = "")
 #Output file name based on input file name and date/time stamped.
 output_file=paste(file_name,
                   "_CatchERR",
+                  stri_replace_all_fixed(
+                    str = Sys.Date(),
+                    pattern = "-",
+                    replacement = ""),
+                  sep="")
+
+output_file_index=paste(file_name,
+                  "_index",
                   stri_replace_all_fixed(
                     str = Sys.Date(),
                     pattern = "-",
@@ -258,7 +266,6 @@ sink()
 
 cat("The file based nodes will now have a GUID assigned to each unique file.")
 
-
 #Function to determine if operating system is OS is mac or linux, to run the UUID generation.
 get_os <- function(){
   sysinf <- Sys.info()
@@ -276,35 +283,41 @@ get_os <- function(){
   tolower(os)
 }
 
+if ("GUID" %in% colnames(df)){
+  df_index=df%>%
+    select(GUID,file_url_in_cds, file_name, file_size, md5sum)
+}else{
+  df_index=df%>%
+    select(file_url_in_cds, file_name, file_size, md5sum)%>%
+    mutate(GUID=NA)
+}
 
-df_index=df%>%
-  select(file_url_in_cds, file_name, file_size, md5sum)%>%
-  mutate(GUID=NA)
 df_index=unique(df_index)
 #For each unique file, apply a uuid to the GUID column. There is logic to handle this in both OSx and Linux, as the UUID call is different from R to the console.
 pb=txtProgressBar(min=0,max=dim(df_index)[1],style = 3)
 cat("\nGUID creation: \n", sep = "")
+
 for (x in 1:dim(df_index)[1]){
   setTxtProgressBar(pb,x)
-  if (get_os()=="osx"){
-    uuid=tolower(system(command = "uuidgen", intern = T))
-  }else{
-    uuid=system(command = "uuid", intern = T)
-  }
   if (is.na(df_index$GUID[x])){
-    df_index$GUID[x]=uuid
+    if (get_os()=="osx"){
+      uuid=tolower(system(command = "uuidgen", intern = T))
+    }else{
+      uuid=system(command = "uuid", intern = T)
+    }
+    #Take the uuids in the GUID column and paste on the 'dg.4DFC/' prefix to create GUIDs for all the files.
+    df_index$GUID[x]=paste("dg.4DFC/",uuid,sep = "")
   }
 }
 
-#Take the uuids in the GUID column and paste on the 'dg.4DFC/' prefix to create GUIDs for all the files.
-df_index=mutate(df_index,GUID=paste("dg.4DFC/",GUID,sep = ""))
 
-df=suppressMessages(left_join(df,df_index))
+df_for_index=suppressMessages(left_join(df,df_index))
 
-df=df%>%
+
+df_for_index=df_for_index%>%
   mutate(url = file_url_in_cds)%>%
   select(GUID, file_size, md5sum, url, acl, everything())
-    
+
 
 ###############
 #
@@ -323,6 +336,8 @@ if (ext == "tsv"){
   openxlsx::writeData(wb=wb, sheet="Metadata", df)
   openxlsx::saveWorkbook(wb = wb,file = paste(path,output_file,".xlsx",sep = ""), overwrite = T)
 }
+
+write_tsv(x = df_for_index, file = paste(path,output_file_index,".tsv",sep = ""),na="")
 
 
 cat(paste("\n\nProcess Complete.\n\nThe output file can be found here: ",path,"\n\n",sep = "")) 
