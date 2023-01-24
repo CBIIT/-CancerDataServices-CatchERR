@@ -22,7 +22,7 @@
 ##################
 
 #List of needed packages
-list_of_packages=c("readr","openxlsx","stringi","readxl","janitor","optparse","tools")
+list_of_packages=c("readr","openxlsx","dplyr","stringi","readxl","janitor","optparse","tools")
 
 #Based on the packages that are present, install ones that are required.
 new.packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
@@ -32,6 +32,7 @@ suppressMessages(if(length(new.packages)) install.packages(new.packages, repos =
 suppressMessages(library(readr,verbose = F))
 suppressMessages(library(readxl,verbose = F))
 suppressMessages(library(openxlsx, verbose = F))
+suppressMessages(library(dplyr, verbose = F))
 suppressMessages(library(stringi,verbose = F))
 suppressMessages(library(janitor,verbose = F))
 suppressMessages(library(optparse,verbose = F))
@@ -58,7 +59,7 @@ option_list = list(
 )
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.0")
+opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.1")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -311,6 +312,7 @@ for (x in 1:dim(df_index)[1]){
 
 
 df_for_index=suppressMessages(left_join(df,df_index))
+
 
 df_for_index=df_for_index%>%
   mutate(url = file_url_in_cds)%>%
