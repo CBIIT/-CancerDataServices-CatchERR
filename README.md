@@ -12,7 +12,7 @@ Rscript --vanilla CDS-CatchERR.R --help
 ```
 Usage: CDS-CatchERR.R [options]
 
-CDS-CatchERR v2.0.2
+CDS-CatchERR v2.0.3
 
 Options:
 	-f CHARACTER, --file=CHARACTER
