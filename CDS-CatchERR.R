@@ -206,6 +206,37 @@ for (value_set_name in names(df_all_terms)){
   }
 }
 
+##############
+#
+# Check and replace for non-UTF-8 characters
+#
+##############
+
+cat("\n\nCertain characters do not handle being transformed into certain file types, due to this, the following characters were changed.\n----------\n")
+
+#initialize table and then populate the key value pairs for the value that is present and what it needs to be converted to.
+df_translations=tibble(value="",translation="")[0,]
+
+#Expression to expand further pairs, copy the following line and add the new value pair.
+df_translations=rbind(df_translations,tibble(value="™",translation="(TM)"))
+
+
+
+
+#Grep through column and rows looking for values to change.
+for (value in 1:dim(df_translations)[1]){
+  df_value=df_translations[value,"value"]
+  df_translate=df_translations[value,"translation"]
+  colnums=grep(pattern = df_value, df)
+  for (colnum in colnums){
+    rownums=grep(pattern = df_value, df[,colnum][[1]])
+    for (rownum in rownums){
+      df[rownum,colnum]=stri_replace_all_fixed(str = df[rownum,colnum], pattern = df_value, replacement = df_translate)
+    }
+    cat(paste("\nWARNING: The following property, ",colnames(df[,colnum]),", contain values, ",df_value,", that can create issues when transforming, these were changed to : ",df_translate,"\n", sep = ""))
+  }
+}
+
 
 ##############
 #
