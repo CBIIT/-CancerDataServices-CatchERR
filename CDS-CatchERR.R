@@ -431,9 +431,9 @@ for(uguid in unique(df_for_index$guid)){
       }
     }
     #Start write out for log file again
-    #sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
+    sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
     cat("\nWARNING: The GUID, ", uguid, ", does not resolve into one row by Velsera standards. **UPDATING TO ROLL UP FORMAT**",sep = "")
-    #sink()
+    sink()
     df_for_index_filtered=unique(df_for_index_filtered)
     
     df_for_index_filtered_new=rbind(df_for_index_filtered_new,df_for_index_filtered)
