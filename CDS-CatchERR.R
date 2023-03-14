@@ -153,6 +153,17 @@ enum_arrays=c('therapeutic_agents',"treatment_type","study_data_types","morpholo
 #Use the list of all accepted values for each value_set_name, and compare that against the Metadata page and determine if the values, if present, match the accepted terms.
 for (value_set_name in names(df_all_terms)){
   if (value_set_name %in% enum_arrays){
+    #Sort each array before checks
+    for (array_value_pos in 1:length(df[value_set_name][[1]])){
+      array_value=df[value_set_name][[1]][array_value_pos]
+      if (grepl(pattern = ";", array_value)){
+        #alphabetize array
+        array_value=paste(sort(unique(stri_split_fixed(str = array_value, pattern = ";")[[1]])), collapse = ";")
+        df[value_set_name][[1]][array_value_pos]=array_value
+      }
+    }
+    
+    #Set up to find values that are not in the expected permissible value (PV) list
     unique_values=unique(df[value_set_name][[1]])
     unique_values=unique(trimws(unlist(stri_split_fixed(str = unique_values,pattern = ";"))))
     unique_values=unique_values[!is.na(unique_values)]
@@ -165,16 +176,20 @@ for (value_set_name in names(df_all_terms)){
               cat(paste("ERROR: ",value_set_name," property contains a value that is not recognized: ", check_value,"\n",sep = ""))
               #NEW ADDITION to push the most correct value into the proper case
               if (tolower(as.character(check_value))%in%tolower(df_all_terms[value_set_name][[1]])){
+                #determine the correct PV
                 pv_pos=grep(pattern = TRUE, x = tolower(df_all_terms[value_set_name][[1]])%in%tolower(as.character(check_value)))
-                value_pos=grep(pattern = TRUE, x = df[value_set_name][[1]]%in%as.character(check_value))
-                df[value_pos,value_set_name]<-df_all_terms[value_set_name][[1]][pv_pos]
-                cat(paste("\tThe value in ",value_set_name," was changed: ", check_value," ---> ",df_all_terms[value_set_name][[1]][pv_pos],"\n",sep = ""))
+                #find all the value positions for the property with wrong value
+                value_positions=grep(pattern = as.character(check_value) , x = df[value_set_name][[1]])
+                #for each position, change the value in the array.
+                for (value_pos in value_positions){
+                  previous_value=df[value_pos,value_set_name]
+                  df[value_pos,value_set_name]<-stri_replace_all_fixed(str =df[value_pos,value_set_name],pattern = as.character(check_value), replacement = df_all_terms[value_set_name][[1]][pv_pos])
+                  cat(paste("\tThe value in ",value_set_name,", at position ",value_pos,", was changed: ", previous_value," ---> ",df[value_pos,value_set_name],"\n",sep = ""))
+                }
               }
             }
           }
-          
         }
-        
       }else{
         cat(paste("PASS:",value_set_name,"property contains all valid values.\n"))
       }
@@ -327,11 +342,11 @@ sink()
 
 ###############
 #
-# Assign GUIDS to files
+# Assign guids to files
 #
 ###############
 
-cat("The file based nodes will now have a GUID assigned to each unique file.")
+cat("The file based nodes will now have a guid assigned to each unique file.")
 
 #Function to determine if operating system is OS is mac or linux, to run the UUID generation.
 get_os <- function(){
@@ -350,30 +365,31 @@ get_os <- function(){
   tolower(os)
 }
 
-if ("GUID" %in% colnames(df)){
+if ("guid" %in% colnames(df)){
   df_index=df%>%
-    select(GUID,file_url_in_cds, file_name, file_size, md5sum)
+    select(guid ,url, file_name, size, md5)
 }else{
   df_index=df%>%
     select(file_url_in_cds, file_name, file_size, md5sum)%>%
-    mutate(GUID=NA)
+    mutate(guid=NA, size=file_size, md5=md5sum,url = file_url_in_cds)%>%
+    select(-file_size,-md5sum,-file_url_in_cds)
 }
 
 df_index=unique(df_index)
-#For each unique file, apply a uuid to the GUID column. There is logic to handle this in both OSx and Linux, as the UUID call is different from R to the console.
+#For each unique file, apply a uuid to the guid column. There is logic to handle this in both OSx and Linux, as the UUID call is different from R to the console.
 pb=txtProgressBar(min=0,max=dim(df_index)[1],style = 3)
-cat("\nGUID creation: \n", sep = "")
+cat("\nguid creation: \n", sep = "")
 
 for (x in 1:dim(df_index)[1]){
   setTxtProgressBar(pb,x)
-  if (is.na(df_index$GUID[x])){
+  if (is.na(df_index$guid[x])){
     if (get_os()=="osx"){
       uuid=tolower(system(command = "uuidgen", intern = T))
     }else{
       uuid=system(command = "uuid", intern = T)
     }
-    #Take the uuids in the GUID column and paste on the 'dg.4DFC/' prefix to create GUIDs for all the files.
-    df_index$GUID[x]=paste("dg.4DFC/",uuid,sep = "")
+    #Take the uuids in the guid column and paste on the 'dg.4DFC/' prefix to create guids for all the files.
+    df_index$guid[x]=paste("dg.4DFC/",uuid,sep = "")
   }
 }
 
@@ -382,8 +398,52 @@ df_for_index=suppressMessages(left_join(df,df_index))
 
 
 df_for_index=df_for_index%>%
-  mutate(url = file_url_in_cds)%>%
-  select(GUID, file_size, md5sum, url, acl, everything())
+  select(guid, md5, size, acl, url, everything())
+
+
+###############
+#
+# Roll Up
+#
+###############
+
+
+
+#For some submissions that contain files that have multiple samples per file, thus multiple lines per file, they need to be rolled up to better work with SBG/Velsera ingestion.
+
+df_for_index_filtered_new=df_for_index[0,]
+
+#Progress bar for roll up
+pb=txtProgressBar(min=0,max=length(unique(df_for_index$guid)),style = 3)
+x=0
+cat("\nCreating Roll Ups for specific files: \n", sep = "")
+
+for(uguid in unique(df_for_index$guid)){
+  setTxtProgressBar(pb,x)
+  x=x+1
+  df_for_index_filtered=filter(df_for_index, guid==uguid)
+  if (dim(df_for_index_filtered)[1]!=1){
+    for (colnum in 1:dim(df_for_index_filtered)[2]){
+      col_vals=unique(df_for_index_filtered[,colnum])[[1]]
+      if (any(!is.na(col_vals))){
+        col_vals=paste(col_vals,collapse = ";")
+        df_for_index_filtered[,colnum]<- col_vals
+      }
+    }
+    #Start write out for log file again
+    #sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
+    cat("\nWARNING: The GUID, ", uguid, ", does not resolve into one row by Velsera standards. **UPDATING TO ROLL UP FORMAT**",sep = "")
+    #sink()
+    df_for_index_filtered=unique(df_for_index_filtered)
+    
+    df_for_index_filtered_new=rbind(df_for_index_filtered_new,df_for_index_filtered)
+   
+  }else{
+    df_for_index_filtered_new=rbind(df_for_index_filtered_new,df_for_index_filtered)
+  }
+}
+
+df_for_index=unique(df_for_index_filtered_new)
 
 
 ###############
