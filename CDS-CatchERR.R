@@ -180,12 +180,27 @@ for (value_set_name in names(df_all_terms)){
                 pv_pos=grep(pattern = TRUE, x = tolower(df_all_terms[value_set_name][[1]])%in%tolower(as.character(check_value)))
                 #find all the value positions for the property with wrong value
                 value_positions=grep(pattern = as.character(check_value) , x = df[value_set_name][[1]])
+                
+                #create dataframe to capture values changed as to not overload with lines
+                prev_repl_df=tibble(previous_value=NA, replacement_value=NA)
+                prev_repl_df_add=tibble(previous_value=NA, replacement_value=NA)
+                prev_repl_df=prev_repl_df[0,]
+                
                 #for each position, change the value in the array.
                 for (value_pos in value_positions){
                   previous_value=df[value_pos,value_set_name]
-                  df[value_pos,value_set_name]<-stri_replace_all_fixed(str =df[value_pos,value_set_name],pattern = as.character(check_value), replacement = df_all_terms[value_set_name][[1]][pv_pos])
+                  replacement_value=df_all_terms[value_set_name][[1]][pv_pos]
+                  df[value_pos,value_set_name]<-stri_replace_all_fixed(str =previous_value, pattern = as.character(check_value), replacement = replacement_value)
+                  
+                  prev_repl_df_add$previous_value=previous_value
+                  prev_repl_df_add$replacement_value=replacement_value
+                  
+                  prev_repl_df=unique(rbind(prev_repl_df,prev_repl_df_add))
                 }
-                cat(paste("\tThe value in ",value_set_name,", was changed: ", previous_value," ---> ",df[value_pos,value_set_name],"\n",sep = ""))
+                
+                for ( prdf in 1:dim(prev_repl_df)[1]){
+                  cat(paste("\tThe value in ",value_set_name,", was changed: ", prev_repl_df$previous_value[prdf]," ---> ",prev_repl_df$replacement_value[prdf],"\n",sep = ""))
+                }
               }
             }
           }
@@ -367,11 +382,13 @@ get_os <- function(){
 
 if ("guid" %in% colnames(df)){
   df_index=df%>%
-    select(guid ,url, file_name, size, md5)
+    select(guid ,file_url_in_cds, file_name, file_size, md5sum)%>%
+    mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
+    select(-file_size,-md5sum,-file_url_in_cds)
 }else{
   df_index=df%>%
     select(file_url_in_cds, file_name, file_size, md5sum)%>%
-    mutate(guid=NA, size=file_size, md5=md5sum,url = file_url_in_cds)%>%
+    mutate(guid=NA, size=file_size, md5=md5sum, url = file_url_in_cds)%>%
     select(-file_size,-md5sum,-file_url_in_cds)
 }
 
