@@ -184,8 +184,8 @@ for (value_set_name in names(df_all_terms)){
                 for (value_pos in value_positions){
                   previous_value=df[value_pos,value_set_name]
                   df[value_pos,value_set_name]<-stri_replace_all_fixed(str =df[value_pos,value_set_name],pattern = as.character(check_value), replacement = df_all_terms[value_set_name][[1]][pv_pos])
-                  cat(paste("\tThe value in ",value_set_name,", at position ",value_pos,", was changed: ", previous_value," ---> ",df[value_pos,value_set_name],"\n",sep = ""))
                 }
+                cat(paste("\tThe value in ",value_set_name,", was changed: ", previous_value," ---> ",df[value_pos,value_set_name],"\n",sep = ""))
               }
             }
           }
@@ -393,9 +393,7 @@ for (x in 1:dim(df_index)[1]){
   }
 }
 
-
-df_for_index=suppressMessages(left_join(df,df_index))
-
+df_for_index=suppressMessages(left_join(df,df_index,multiple="all"))
 
 df_for_index=df_for_index%>%
   select(guid, md5, size, acl, url, everything())
