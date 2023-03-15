@@ -181,25 +181,40 @@ for (value_set_name in names(df_all_terms)){
                 #find all the value positions for the property with wrong value
                 value_positions=grep(pattern = as.character(check_value) , x = df[value_set_name][[1]])
                 
+                #create a filter to remove positions that are erroneously selected and either find only values that are the whole string or the string in part of an array list.
+                for (value_pos in value_positions){
+                  previous_value=df[value_pos,value_set_name][[1]]
+                  replacement_value=df_all_terms[value_set_name][[1]][pv_pos]
+                  if (nchar(previous_value)!=nchar(replacement_value)){
+                    array_pattern=c(paste(replacement_value,";",sep = ""),paste(";",replacement_value,sep = ""))
+                    array_pos=grep(pattern = paste(array_pattern,collapse = "|"), x = previous_value)
+                    array_pos=grep(pattern = paste(array_pattern,collapse = "|"), x = "previous_value")
+                    if (length(array_pos)==0){
+                      value_positions=value_positions[!(value_positions %in% value_pos)]
+                    }
+                  }
+                }
+                
+                
                 #create dataframe to capture values changed as to not overload with lines
-                prev_repl_df=tibble(previous_value=NA, replacement_value=NA)
-                prev_repl_df_add=tibble(previous_value=NA, replacement_value=NA)
+                prev_repl_df=tibble(previous_value_col=NA, replacement_value_col=NA)
+                prev_repl_df_add=tibble(previous_value_col=NA, replacement_value_col=NA)
                 prev_repl_df=prev_repl_df[0,]
                 
                 #for each position, change the value in the array.
                 for (value_pos in value_positions){
-                  previous_value=df[value_pos,value_set_name]
+                  previous_value=df[value_pos,value_set_name][[1]]
                   replacement_value=df_all_terms[value_set_name][[1]][pv_pos]
                   df[value_pos,value_set_name]<-stri_replace_all_fixed(str =previous_value, pattern = as.character(check_value), replacement = replacement_value)
                   
-                  prev_repl_df_add$previous_value=previous_value
-                  prev_repl_df_add$replacement_value=replacement_value
+                  prev_repl_df_add$previous_value_col=previous_value
+                  prev_repl_df_add$replacement_value_col=replacement_value
                   
                   prev_repl_df=unique(rbind(prev_repl_df,prev_repl_df_add))
                 }
                 
                 for ( prdf in 1:dim(prev_repl_df)[1]){
-                  cat(paste("\tThe value in ",value_set_name,", was changed: ", prev_repl_df$previous_value[prdf]," ---> ",prev_repl_df$replacement_value[prdf],"\n",sep = ""))
+                  cat(paste("\tThe value in ",value_set_name,", was changed: ", prev_repl_df$previous_value_col[prdf]," ---> ",prev_repl_df$replacement_value_col[prdf],"\n",sep = ""))
                 }
               }
             }
