@@ -425,10 +425,35 @@ for (x in 1:dim(df_index)[1]){
   }
 }
 
-df_for_index=suppressMessages(left_join(df,df_index,multiple="all"))
+df=suppressMessages(left_join(df,df_index,multiple="all",by=c("md5sum"='md5','file_size'='size','file_url_in_cds'='url','file_name'='file_name')))
 
-df_for_index=df_for_index%>%
+
+df_for_index=df%>%
+  mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
   select(guid, md5, size, acl, url, everything())
+
+
+###############
+#
+# Write out CatchERR file
+#
+# This was done as a check point before the roll up that is required in index-able files now.
+# This will save time if something fails, as this will now have the guids for the files and can then be used as the next input file for CatchERR or Submission_ValidationR.
+#
+###############
+
+#Write out file
+if (ext == "tsv"){
+  suppressMessages(write_tsv(df, file = paste(path,output_file,".tsv",sep = ""), na=""))
+}else if (ext == "csv"){
+  suppressMessages(write_csv(df, file = paste(path,output_file,".csv",sep = ""), na=""))
+}else if (ext == "xlsx"){
+  wb=openxlsx::loadWorkbook(file = file_path)
+  openxlsx::deleteData(wb, sheet = "Metadata",rows = 1:(dim(df)[1]+1),cols=1:(dim(df)[2]+1),gridExpand = TRUE)
+  openxlsx::writeData(wb=wb, sheet="Metadata", df)
+  openxlsx::saveWorkbook(wb = wb,file = paste(path,output_file,".xlsx",sep = ""), overwrite = T)
+}
+
 
 
 ###############
@@ -436,8 +461,6 @@ df_for_index=df_for_index%>%
 # Roll Up
 #
 ###############
-
-
 
 #For some submissions that contain files that have multiple samples per file, thus multiple lines per file, they need to be rolled up to better work with SBG/Velsera ingestion.
 
@@ -467,7 +490,7 @@ for(uguid in unique(df_for_index$guid)){
     df_for_index_filtered=unique(df_for_index_filtered)
     
     df_for_index_filtered_new=rbind(df_for_index_filtered_new,df_for_index_filtered)
-   
+    
   }else{
     df_for_index_filtered_new=rbind(df_for_index_filtered_new,df_for_index_filtered)
   }
@@ -482,17 +505,7 @@ df_for_index=unique(df_for_index_filtered_new)
 #
 ###############
 
-#Write out file
-if (ext == "tsv"){
-  suppressMessages(write_tsv(df, file = paste(path,output_file,".tsv",sep = ""), na=""))
-}else if (ext == "csv"){
-  suppressMessages(write_csv(df, file = paste(path,output_file,".csv",sep = ""), na=""))
-}else if (ext == "xlsx"){
-  wb=openxlsx::loadWorkbook(file = file_path)
-  openxlsx::deleteData(wb, sheet = "Metadata",rows = 1:(dim(df)[1]+1),cols=1:(dim(df)[2]+1),gridExpand = TRUE)
-  openxlsx::writeData(wb=wb, sheet="Metadata", df)
-  openxlsx::saveWorkbook(wb = wb,file = paste(path,output_file,".xlsx",sep = ""), overwrite = T)
-}
+#Write out index-able file
 
 write_tsv(x = df_for_index, file = paste(path,output_file_index,".tsv",sep = ""),na="")
 
