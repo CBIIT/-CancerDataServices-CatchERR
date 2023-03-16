@@ -162,7 +162,7 @@ for (value_set_name in names(df_all_terms)){
       if (grepl(pattern = ";", array_value)){
         
         #alphabetize array
-        array_value=paste(sort(unique(stri_split_fixed(str = array_value, pattern = ";")[[1]])), collapse = ";")
+        array_value=paste(sort(trimws(unique(stri_split_fixed(str = array_value, pattern = ";")[[1]]))), collapse = ";")
         df[value_set_name][[1]][array_value_pos]=array_value
       }
     }
