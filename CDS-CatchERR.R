@@ -128,6 +128,8 @@ if (ext == "tsv"){
 #Start write out for log file
 sink(paste(path,output_file,".txt",sep = ""))
 
+cat("\n\nThe following columns have controlled vocabulary on the 'Terms and Value Sets' page of the template file. If the values present do not match, they will noted and in some cases fixed:\n----------\n")
+
 
 df_tavs=suppressMessages(read_xlsx(path = template_path, sheet = "Terms and Value Sets"))
 df_tavs=remove_empty(df_tavs,c('rows','cols'))
@@ -319,6 +321,8 @@ if (length(acl_check)>1){
 #
 ##############
 
+cat("\n\nCheck the following url columns (file_url_in_cds), to make sure the full file url is present and fix entries that are not:\n----------")
+
 #Fix urls if the url does not contain the file name but only the base url
 #If full file path is in the url
 for (bucket_loc in 1:dim(df)[1]){
@@ -376,7 +380,7 @@ sink()
 #
 ###############
 
-cat("The file based nodes will now have a guid assigned to each unique file.")
+cat("\nEach unique file will now have a guid assigned to it.\nguid creation: \n")
 
 #Function to determine if operating system is OS is mac or linux, to run the UUID generation.
 get_os <- function(){
@@ -397,20 +401,16 @@ get_os <- function(){
 
 if ("guid" %in% colnames(df)){
   df_index=df%>%
-    select(guid ,file_url_in_cds, file_name, file_size, md5sum)%>%
-    mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
-    select(-file_size,-md5sum,-file_url_in_cds)
+    select(guid ,file_url_in_cds, file_name, file_size, md5sum)
 }else{
   df_index=df%>%
     select(file_url_in_cds, file_name, file_size, md5sum)%>%
-    mutate(guid=NA, size=file_size, md5=md5sum, url = file_url_in_cds)%>%
-    select(-file_size,-md5sum,-file_url_in_cds)
+    mutate(guid=NA)
 }
 
 df_index=unique(df_index)
 #For each unique file, apply a uuid to the guid column. There is logic to handle this in both OSx and Linux, as the UUID call is different from R to the console.
 pb=txtProgressBar(min=0,max=dim(df_index)[1],style = 3)
-cat("\nguid creation: \n", sep = "")
 
 for (x in 1:dim(df_index)[1]){
   setTxtProgressBar(pb,x)
@@ -425,7 +425,7 @@ for (x in 1:dim(df_index)[1]){
   }
 }
 
-df=suppressMessages(left_join(df,df_index,multiple="all",by=c("md5sum"='md5','file_size'='size','file_url_in_cds'='url','file_name'='file_name')))
+df=suppressMessages(left_join(df,df_index,multiple="all"))
 
 
 df_for_index=df%>%
@@ -461,6 +461,10 @@ if (ext == "tsv"){
 # Roll Up
 #
 ###############
+
+sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
+cat("\n\nThis section will display which file guids were duplicated in the flatten form and thus rolled up to make it an acceptable Velsera submission:\n----------")
+sink()
 
 #For some submissions that contain files that have multiple samples per file, thus multiple lines per file, they need to be rolled up to better work with SBG/Velsera ingestion.
 
