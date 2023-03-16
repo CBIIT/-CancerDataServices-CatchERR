@@ -194,7 +194,7 @@ for (value_set_name in names(df_all_terms)){
                   replacement_value=df_all_terms[value_set_name][[1]][pv_pos]
                   if (nchar(previous_value)!=nchar(replacement_value)){
                     array_pattern=c(paste(replacement_value,";",sep = ""),paste(";",replacement_value,sep = ""))
-                    array_pos=grep(pattern = paste(array_pattern,collapse = "|"), x = previous_value)
+                    array_pos=grep(pattern = tolower(paste(array_pattern,collapse = "|")), x = previous_value)
                     if (length(array_pos)==0){
                       value_positions=value_positions[!(value_positions %in% value_pos)]
                     }
