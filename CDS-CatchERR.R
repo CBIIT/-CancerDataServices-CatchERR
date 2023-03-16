@@ -155,10 +155,12 @@ enum_arrays=c('therapeutic_agents',"treatment_type","study_data_types","morpholo
 #Use the list of all accepted values for each value_set_name, and compare that against the Metadata page and determine if the values, if present, match the accepted terms.
 for (value_set_name in names(df_all_terms)){
   if (value_set_name %in% enum_arrays){
+    
     #Sort each array before checks
     for (array_value_pos in 1:length(df[value_set_name][[1]])){
       array_value=df[value_set_name][[1]][array_value_pos]
       if (grepl(pattern = ";", array_value)){
+        
         #alphabetize array
         array_value=paste(sort(unique(stri_split_fixed(str = array_value, pattern = ";")[[1]])), collapse = ";")
         df[value_set_name][[1]][array_value_pos]=array_value
@@ -176,10 +178,13 @@ for (value_set_name in names(df_all_terms)){
           if (!is.na(check_value)){
             if (!as.character(check_value)%in%df_all_terms[value_set_name][[1]]){
               cat(paste("ERROR: ",value_set_name," property contains a value that is not recognized: ", check_value,"\n",sep = ""))
+              
               #NEW ADDITION to push the most correct value into the proper case
               if (tolower(as.character(check_value))%in%tolower(df_all_terms[value_set_name][[1]])){
+                
                 #determine the correct PV
                 pv_pos=grep(pattern = TRUE, x = tolower(df_all_terms[value_set_name][[1]])%in%tolower(as.character(check_value)))
+                
                 #find all the value positions for the property with wrong value
                 value_positions=grep(pattern = as.character(check_value) , x = df[value_set_name][[1]])
                 
@@ -195,7 +200,6 @@ for (value_set_name in names(df_all_terms)){
                     }
                   }
                 }
-                
                 
                 #create dataframe to capture values changed as to not overload with lines
                 prev_repl_df=tibble(previous_value_col=NA, replacement_value_col=NA)
@@ -235,6 +239,7 @@ for (value_set_name in names(df_all_terms)){
           if (!is.na(check_value)){
             if (!as.character(check_value)%in%df_all_terms[value_set_name][[1]]){
               cat(paste("ERROR: ",value_set_name," property contains a value that is not recognized: ", check_value,"\n",sep = ""))
+              
               #NEW ADDITION to push the most correct value into the proper case
               if (tolower(as.character(check_value))%in%tolower(df_all_terms[value_set_name][[1]])){
                 pv_pos=grep(pattern = TRUE, x = tolower(df_all_terms[value_set_name][[1]])%in%tolower(as.character(check_value)))
