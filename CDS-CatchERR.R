@@ -22,7 +22,7 @@
 ##################
 
 #List of needed packages
-list_of_packages=c("readr","openxlsx","dplyr","stringi","readxl","janitor","optparse","tools")
+list_of_packages=c("readr","openxlsx","dplyr","tidyr","stringi","readxl","janitor","optparse","tools")
 
 #Based on the packages that are present, install ones that are required.
 new.packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
@@ -33,6 +33,7 @@ suppressMessages(library(readr,verbose = F))
 suppressMessages(library(readxl,verbose = F))
 suppressMessages(library(openxlsx, verbose = F))
 suppressMessages(library(dplyr, verbose = F))
+suppressMessages(library(tidyr, verbose = F))
 suppressMessages(library(stringi,verbose = F))
 suppressMessages(library(janitor,verbose = F))
 suppressMessages(library(optparse,verbose = F))
@@ -505,6 +506,146 @@ for(uguid in unique(df_for_index$guid)){
 }
 
 df_for_index=unique(df_for_index_filtered_new)
+
+
+################
+#
+# File_type appender for SBG/Velsera
+#
+################
+
+# Velsera does not use the file_type property to determine the file type, but instead pulls
+# the extension off of the file_name property. To ensure that the correct file_type is
+# obtained, this section will check to see if the extension matches the file_type that is
+# noted and if it does not have that extension, it is appended as a suffix to the file_name
+# value.
+
+#Create a data frame to summarize the changes made, to be printed out
+df_ext_change=data.frame(pre=NA,post=NA)
+df_ext_change_add=df_ext_change
+df_ext_change=df_ext_change[-1,]
+
+
+sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
+
+cat("\n\nThis section will display all changes that were made to the file_name value for each file to ensure that the file extension matches the 'file_type' column to ensure correct ETL in Velsera:\n----------")
+
+for (inv_file_guid in 1:length(unique(df_for_index$guid))){
+  gz_flag=FALSE
+  ext_change=FALSE
+  file_name=df_for_index$file_name[inv_file_guid]
+  test_ext=tolower(file_ext(file_name))
+  exp_ext=tolower(df_for_index$file_type[inv_file_guid])
+  
+  #check for gzip, fix the filename, note it and then give the next extension
+  if( test_ext == 'gz'){
+    file_name_gz=file_path_sans_ext(file_name)
+    gz_flag=TRUE
+    test_ext=tolower(file_ext(file_name_gz))
+  }
+  
+  if (test_ext!=exp_ext){
+    ext_change=TRUE
+    
+    #set the file type to the new file extension
+    test_ext_change=exp_ext
+    
+    # an example where the file type is a longer name (fastq) of the actual extension (fq)
+    # but the extension (fq) is recognized and fine as a shorten term.
+    # Since this situation is acceptable, the ext_change flag is set to FALSE to no longer
+    # change the file ext.
+    if(all(exp_ext == 'fastq' & test_ext == 'fq')){
+      ext_change=FALSE
+    }
+    
+    # an example of where the file type (gvcf) is more specific than what the extension
+    # would pull (vcf), because the file name is setup differently (it should be 
+    # filename.gvcf.gz, but instead it is filename.g.vcf.gz)
+    if( all(exp_ext == 'gvcf' & test_ext=="vcf")){
+      test_ext_change="gvcf"
+    }
+    
+    # if the ext_change is TRUE, then we have determined the file ext still needs 
+    # to be changed.
+    if (ext_change==TRUE){
+      cat("\nWARNING: There is an unexpected file type for, ",file_name, ", and will be fixed:\n\t",test_ext," ---> ",exp_ext, sep="")
+      
+      #Update general changes made
+      df_ext_change_add$pre=test_ext
+      df_ext_change_add$post=exp_ext
+      
+      df_ext_change=rbind(df_ext_change,df_ext_change_add)
+      df_ext_change=unique(df_ext_change)
+      
+      # if the gz_flag is true, then the gz needs to be put back on after the 
+      # new ext is added.
+      if (gz_flag==TRUE){
+        file_name=paste(file_name_gz,'.',test_ext_change,".gz",sep = "")
+        df_for_index$file_name[inv_file_guid]=file_name
+        cat("\n\t",file_name,sep = "")
+      }else{
+        file_name=paste(file_name,'.',test_ext_change,sep = "")
+        df_for_index$file_name[inv_file_guid]=file_name
+        cat("\n\t",file_name,sep = "")
+      }
+    }
+  }
+}
+
+cat("\n\n---------\nThe following overview of changes were made to the files, where the original value had the second value added onto the end.\n---------")
+
+df_ext_change=arrange(df_ext_change, pre, post)
+
+if (dim(df_ext_change)[1]!=0){
+  for (ext_pos in 1:dim(df_ext_change)[1]){
+    cat("\n\t",df_ext_change$pre[ext_pos]," ---> ",df_ext_change$post[ext_pos],sep = "")
+  }
+}
+
+
+sink()
+
+
+#################
+#
+# Double file names
+#
+#################
+
+#This section deals with the inability for SBG/Velsera to handle file_name values that are the same.
+
+df_double_name=filter(count(group_by(df_for_index, file_name)), n>1)
+
+df_file_url=select(df_for_index[(df_for_index$file_name %in% df_double_name$file_name),], file_name, file_url_in_cds)
+
+df_file_url=mutate(df_file_url,file_name_old=file_name, file_name=stri_reverse(file_url_in_cds))%>%
+  separate(file_name, c("file","upper_dir","other_dir"), sep = "/", extra = "merge")%>%
+  mutate(file_name=paste(file,upper_dir,sep = "_"), file_name=stri_reverse(file_name))%>%
+  select(-other_dir,-file,-upper_dir)
+
+for (x in 1:dim(df_file_url)[1]){
+  df_for_index$file_name[df_for_index$file_url_in_cds %in% df_file_url$file_url_in_cds[x]]<-df_file_url$file_name[x]
+}
+
+sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
+
+cat("\n\nThis section will display all changes that were made to the file_name value for each file to ensure that the file_name is unique among all files to ensure correct ETL in Velsera:\n----------")
+
+df_file_url=arrange(df_file_url, file_name_old, file_name)
+
+for (x in 1:dim(df_file_url)[1]){
+  cat("\n\t",df_file_url$file_name_old[x]," ---> ",df_file_url$file_name[x],sep = "")
+}
+
+df_double_name=filter(count(group_by(df_for_index, file_name)), n>1)
+
+if (dim(df_double_name)[1]!=0){
+  cat("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\nERROR: Even after creating new names from the combination of the file_name and it's parent directory, there are still file_name values that are the same.\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
+}
+
+
+sink()
+
 
 
 ###############
