@@ -595,6 +595,8 @@ for (inv_file_guid in 1:length(unique(df_for_index$guid))){
 cat("\n\n---------\nThe following overview of changes were made to the files, where the original value had the second value added onto the end.\n---------")
 
 df_ext_change=arrange(df_ext_change, pre, post)
+df_ext_change=remove_empty(dat = df_ext_change, which = c("rows","cols"))
+
 
 if (dim(df_ext_change)[1]!=0){
   for (ext_pos in 1:dim(df_ext_change)[1]){
@@ -632,9 +634,13 @@ sink(paste(path,output_file,".txt",sep = ""),append = TRUE)
 cat("\n\nThis section will display all changes that were made to the file_name value for each file to ensure that the file_name is unique among all files to ensure correct ETL in Velsera:\n----------")
 
 df_file_url=arrange(df_file_url, file_name_old, file_name)
+df_file_url=remove_empty(dat = df_file_url, which = c("rows","cols"))
 
-for (x in 1:dim(df_file_url)[1]){
-  cat("\n\t",df_file_url$file_name_old[x]," ---> ",df_file_url$file_name[x],sep = "")
+
+if (dim(df_file_url)[1]!=0){
+  for (x in 1:dim(df_file_url)[1]){
+    cat("\n\t",df_file_url$file_name_old[x]," ---> ",df_file_url$file_name[x],sep = "")
+  }
 }
 
 df_double_name=filter(count(group_by(df_for_index, file_name)), n>1)
