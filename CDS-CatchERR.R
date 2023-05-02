@@ -333,46 +333,41 @@ cat("\n\nCheck the following url columns (file_url_in_cds), to make sure the ful
 for (bucket_loc in 1:dim(df)[1]){
   bucket_url=df$file_url_in_cds[bucket_loc]
   bucket_file=df$file_name[bucket_loc]
+  
   #skip if bucket_url is NA (no associated url for file)
   if (!is.na(bucket_url)){
     #see if the file name is found in the bucket_url
-    if (grepl(pattern = bucket_file,x = bucket_url)){
-      #download file, run md5sum, copy to data frame and delete file
-      file_name=basename(bucket_url)
-      if (bucket_file!=file_name){
-        cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
-      }
-    }
-    #if the file url has to be reworked to include the file with the base directory.
-    else{
-      if (substr(bucket_url,start = nchar(bucket_url),stop = nchar(bucket_url))=="/"){
-        #fix the 'file_url_in_cds' section to have the full file location
-        bucket_url_change=paste(bucket_url,bucket_file,sep = "")
-        #double check changes made
-        file_name=basename(bucket_url_change)
-        if (bucket_file!=file_name){
-          cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+    file_name=basename(bucket_url)
+    if (bucket_file!=file_name){
+      #the file url has to be reworked to include the file with the base directory.
+        if (substr(bucket_url,start = nchar(bucket_url),stop = nchar(bucket_url))=="/"){
+          #fix the 'file_url_in_cds' section to have the full file location
+          bucket_url_change=paste(bucket_url,bucket_file,sep = "")
+          #double check changes made
+          file_name=basename(bucket_url_change)
+          if (bucket_file!=file_name){
+            cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+          }else{
+            #if file name is still found, then change the url
+            df$file_url_in_cds[bucket_loc]=bucket_url_change
+            cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          }
         }else{
-          #if file name is still found, then change the url
-          df$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
-        }
-      }else{
-        #fix the 'file_url_in_cds' section to have the full file location
-        bucket_url_change=paste(bucket_url,"/",bucket_file,sep = "")
-        #double check changes made
-        file_name=basename(bucket_url_change)
-        if (bucket_file!=file_name){
-          cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
-        }else{
-          #if file name is still found, then change the url
-          df$file_url_in_cds[bucket_loc]=bucket_url_change
-          cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          #fix the 'file_url_in_cds' section to have the full file location
+          bucket_url_change=paste(bucket_url,"/",bucket_file,sep = "")
+          #double check changes made
+          file_name=basename(bucket_url_change)
+          if (bucket_file!=file_name){
+            cat(paste("\nERROR: There is an unresolvable issue with the file url for file: ",bucket_file,sep = ""))
+          }else{
+            #if file name is still found, then change the url
+            df$file_url_in_cds[bucket_loc]=bucket_url_change
+            cat(paste("\nWARNING: The file location for the file, ", bucket_file,", has been changed:\n\t", bucket_url, " ---> ", bucket_url_change,sep = ""))
+          }
         }
       }
     }
   }
-}
 
 
 #close log file write out
