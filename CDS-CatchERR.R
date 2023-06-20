@@ -425,7 +425,7 @@ for (x in 1:dim(df_index)[1]){
   }
 }
 
-df=suppressMessages(right_join(df,df_index,multiple="all"))
+df=suppressMessages(left_join(df,df_index,multiple="all"))
 
 
 df_for_index=df%>%
