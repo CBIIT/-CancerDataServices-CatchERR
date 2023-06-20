@@ -60,7 +60,7 @@ option_list = list(
 )
 
 #create list of options and values for file input
-opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.7")
+opt_parser = OptionParser(option_list=option_list, description = "\nCDS-CatchERR v2.0.8")
 opt = parse_args(opt_parser)
 
 #If no options are presented, return --help, stop and print the following message.
@@ -425,12 +425,38 @@ for (x in 1:dim(df_index)[1]){
   }
 }
 
-df=suppressMessages(left_join(df,df_index,multiple="all"))
+df=suppressMessages(left_join(df,df_index,multiple="all", c('file_name', 'file_size', 'md5sum', 'file_url_in_cds')))
+
+df$guid=NA
+
+for (row in 1:dim(df)[1]){
+  #if there is at least one non-NA value
+  if (!is.na(df$guid.x[row]) | !is.na(df$guid.y[row])){
+    #if there are two non-NA values
+    if (!is.na(df$guid.x[row]) & !is.na(df$guid.y[row])){
+      if (df$guid.x[row] == df$guid.y[row]){
+        df$guid[row]=df$guid.x[row]
+      }else{
+        cat("ERROR: The following row,", row, ", has two GUID values and will default to the original value from the supplied data frame.", sep = "")
+        df$guid[row]=df$guid.x[row]
+      }
+    }else{
+      if (!is.na(df$guid.x[row]) & is.na(df$guid.y[row])){
+        df$guid[row]=df$guid.x[row]
+      }else if (is.na(df$guid.x[row]) & !is.na(df$guid.y[row])){
+        df$guid[row]=df$guid.y[row]
+      }
+    }
+  }else if (is.na(df$guid.x[row]) & is.na(df$guid.y[row])){
+    cat("ERROR: The following row,", row, ", did not receieve a GUID due to an unknown error.", sep = "")
+  }
+}
+
 
 
 df_for_index=df%>%
   mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
-  select(guid, md5, size, acl, url, everything())
+  select(guid, md5, size, acl, url, everything(),-guid.x,-guid.y)
 
 
 ###############
