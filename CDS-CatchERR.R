@@ -453,16 +453,13 @@ if ('guid.x' %in% colnames(df)){
     }
   }
   df=df%>%
-    mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
-    select(guid, md5, size, acl, url, everything(),-guid.x,-guid.y)
-}else{
-  df=df%>%
-    mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
-    select(guid, md5, size, acl, url, everything())
+    select(-guid.x,-guid.y)
 }
 
 
-df_for_index=df
+df_for_index=df%>%
+  mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
+  select(guid, md5, size, acl, url, everything())
 
 
 
