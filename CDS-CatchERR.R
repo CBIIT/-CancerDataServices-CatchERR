@@ -452,19 +452,17 @@ if ('guid.x' %in% colnames(df)){
       cat("ERROR: The following row,", row, ", did not receieve a GUID due to an unknown error.", sep = "")
     }
   }
-  df_for_index=df%>%
+  df=df%>%
     mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
     select(guid, md5, size, acl, url, everything(),-guid.x,-guid.y)
 }else{
-  df_for_index=df%>%
+  df=df%>%
     mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
     select(guid, md5, size, acl, url, everything())
 }
 
 
-
-
-
+df_for_index=df
 
 
 
