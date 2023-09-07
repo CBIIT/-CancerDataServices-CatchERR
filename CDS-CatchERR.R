@@ -458,9 +458,10 @@ if ('guid.x' %in% colnames(df)){
 
 
 df_for_index=df%>%
-  mutate(size=file_size, md5=md5sum, url=file_url_in_cds)%>%
-  select(guid, md5, size, acl, url, everything())
+  mutate(size=file_size, md5=md5sum, url=file_url_in_cds, authz=acl)%>%
+  select(guid, md5, size, acl, authz, url, everything())
 
+df_for_index$authz=stri_replace_all_fixed(str = df_for_index$authz[1], pattern = "['", replacement = "['/programs/")
 
 
 ###############
