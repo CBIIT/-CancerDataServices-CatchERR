@@ -568,6 +568,9 @@ for (inv_file_guid in 1:length(unique(df_for_index$guid))){
     file_name_gz=file_path_sans_ext(file_name)
     gz_flag=TRUE
     test_ext=tolower(file_ext(file_name_gz))
+    if ( exp_ext == paste(test_ext,".gz",sep = "")){
+      test_ext=paste(test_ext,".gz",sep = "")
+    }
   }
   
   if (test_ext!=exp_ext){
