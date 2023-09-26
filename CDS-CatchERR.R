@@ -587,6 +587,10 @@ for (inv_file_guid in 1:length(unique(df_for_index$guid))){
       ext_change=FALSE
     }
     
+    if(all(exp_ext == 'tiff' & test_ext == 'tif')){
+      ext_change=FALSE
+    }
+    
     # an example of where the file type (gvcf) is more specific than what the extension
     # would pull (vcf), because the file name is setup differently (it should be 
     # filename.gvcf.gz, but instead it is filename.g.vcf.gz)
